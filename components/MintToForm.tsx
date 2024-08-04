@@ -8,7 +8,6 @@ import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAccount,
-  getOrCreateAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
 import { create } from "domain";

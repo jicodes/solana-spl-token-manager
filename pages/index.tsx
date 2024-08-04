@@ -4,7 +4,9 @@ import WalletContextProvider from '../components/WalletContextProvider'
 import { AppBar } from '../components/AppBar'
 import { BalanceDisplay } from '../components/BalanceDisplay'
 import { CreateMintForm } from '../components/CreateMint'
-import { SendSolForm } from '../components/SendSolForm'
+import { MintToForm } from '../components/MintToForm'
+import { TransferToForm } from '../components/TransferToForm'
+
 import Head from 'next/head'
 
 const Home: NextPage = (props) => {
@@ -12,7 +14,7 @@ const Home: NextPage = (props) => {
   return (
     <div className={styles.App}>
       <Head>
-        <title>Wallet-Adapter Example</title>
+        <title>Solana SPL token demo</title>
         <meta
           name="description"
           content="Wallet-Adapter Example"
@@ -23,7 +25,8 @@ const Home: NextPage = (props) => {
         <div className={styles.AppBody}>
           <BalanceDisplay />
           <CreateMintForm />
-          <SendSolForm />
+          <MintToForm />
+          <TransferToForm />
         </div>
       </WalletContextProvider >
     </div>
