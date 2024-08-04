@@ -66,14 +66,14 @@ export const CreateMintForm: FC = () => {
             Create Mint
           </button>
         </form>
-      ) : (
-        <span>Connect Your Wallet</span>
-      )}
+      ) : null}
       {txSig ? (
         <div>
           <p>Token Mint Address: {mint}</p>
           <p>View your transaction on </p>
-          <a href={link()}>Solana Explorer</a>
+          <a href={link()} target="_blank" rel="noopener noreferrer">
+            Solana Explorer
+          </a>
         </div>
       ) : null}
     </div>
