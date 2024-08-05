@@ -132,7 +132,9 @@ export const MintToForm: FC = () => {
           <p>Recipient ATA Address: {tokenAccount} </p>
           <p>Recipient ATA Balance: {balance} </p>
           <p>View your transaction on </p>
-          <a href={link()}>Solana Explorer</a>
+          <a href={link()} target="_blank" rel="noopener noreferrer">
+            Solana Explorer
+          </a>
         </div>
       ) : null}
     </div>
