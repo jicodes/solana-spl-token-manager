@@ -3,16 +3,15 @@ import * as web3 from "@solana/web3.js";
 import { FC, useState } from "react";
 import styles from "../styles/Home.module.css";
 import {
-  createMintToInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
+  getAccount,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAccount,
-  createAssociatedTokenAccountInstruction,
 } from "@solana/spl-token";
-import { create } from "domain";
 
-export const MintToForm: FC = () => {
+export const TransferToForm: FC = () => {
   const [txSig, setTxSig] = useState("");
   const [tokenAccount, setTokenAccount] = useState("");
   const [balance, setBalance] = useState("");
@@ -25,7 +24,7 @@ export const MintToForm: FC = () => {
       : "";
   };
 
-  const mintTo = async (event) => {
+  const handleTransfer = async (event) => {
     event.preventDefault();
     if (!connection || !publicKey) {
       return;
@@ -34,14 +33,34 @@ export const MintToForm: FC = () => {
     const mintPubKey = new web3.PublicKey(event.target.mint.value);
     const recipientPubKey = new web3.PublicKey(event.target.recipient.value);
 
-    let amount = event.target.amount.value;
-    amount = amount * Math.pow(10, DECIMALS);
-
     try {
       const transaction = new web3.Transaction();
+      let amount = event.target.amount.value;
+      amount = BigInt(amount * Math.pow(10, DECIMALS));
+
+      // Get the ATA for the sender
+      const senderAta = await getAssociatedTokenAddress(
+        mintPubKey,
+        publicKey,
+        false,
+        TOKEN_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      );
+
+      // Check if the sender's ATA exists
+      const senderAccountInfo = await connection.getAccountInfo(senderAta);
+      if (!senderAccountInfo) {
+        throw new Error("Sender's associated token account does not exist.");
+      }
+
+      // Check the sender's token balance
+      const senderAccount = await getAccount(connection, senderAta);
+      if (senderAccount.amount < amount) {
+        throw new Error("Sender does not have enough balance");
+      }
 
       // Get the ATA for the recipient
-      const ata = await getAssociatedTokenAddress(
+      const recipientAta = await getAssociatedTokenAddress(
         mintPubKey,
         recipientPubKey,
         false,
@@ -49,14 +68,14 @@ export const MintToForm: FC = () => {
         ASSOCIATED_TOKEN_PROGRAM_ID,
       );
       // Check if the ATA exists
-      const accountInfo = await connection.getAccountInfo(ata);
+      const accountInfo = await connection.getAccountInfo(recipientAta);
 
       if (!accountInfo) {
         // If the ATA doesn't exist, create it
         transaction.add(
           createAssociatedTokenAccountInstruction(
             publicKey, // payer
-            ata, // associatedToken
+            recipientAta, // associatedToken
             recipientPubKey, // owner
             mintPubKey, // mint
             TOKEN_PROGRAM_ID,
@@ -64,9 +83,15 @@ export const MintToForm: FC = () => {
           ),
         );
       }
-      // Add the mint to instruction
+
+      // Add transfer token instruction
       transaction.add(
-        createMintToInstruction(mintPubKey, ata, publicKey, BigInt(amount)),
+        createTransferInstruction(
+          senderAta,
+          recipientAta,
+          publicKey,
+          amount as bigint,
+        ),
       );
 
       const signature = await sendTransaction(transaction, connection);
@@ -80,22 +105,21 @@ export const MintToForm: FC = () => {
       );
 
       setTxSig(signature);
-      setTokenAccount(ata.toString());
+      setTokenAccount(recipientAta.toString());
 
       // Fetch the updated balance of recipient
-      const account = await getAccount(connection, ata);
+      const account = await getAccount(connection, recipientAta);
       const balanceInTokens = Number(account.amount) / Math.pow(10, DECIMALS);
       setBalance(balanceInTokens.toString());
     } catch (error) {
-      console.error("Error minting tokens:", error);
+      console.error("Error transfering tokens:", error);
     }
   };
 
   return (
     <div>
-      <br />
       {publicKey ? (
-        <form onSubmit={mintTo} className={styles.form}>
+        <form onSubmit={handleTransfer} className={styles.form}>
           <label htmlFor="mint">Token Mint:</label>
           <input
             id="mint"
@@ -104,7 +128,15 @@ export const MintToForm: FC = () => {
             placeholder="Enter Token Mint"
             required
           />
-          <label htmlFor="recipient">Recipient:</label>
+          <label htmlFor="amount">Amount to transfer:</label>
+          <input
+            id="amount"
+            type="text"
+            className={styles.formField}
+            placeholder="e.g. 10"
+            required
+          />
+          <label htmlFor="recipient">Transfer SPL token to:</label>
           <input
             id="recipient"
             type="text"
@@ -112,20 +144,12 @@ export const MintToForm: FC = () => {
             placeholder="Enter Recipient PublicKey"
             required
           />
-          <label htmlFor="amount">Amount Tokens to Mint:</label>
-          <input
-            id="amount"
-            type="text"
-            className={styles.formField}
-            placeholder="e.g. 100"
-            required
-          />
           <button type="submit" className={styles.formButton}>
-            Mint Tokens
+            Transfer
           </button>
         </form>
       ) : (
-        <span></span>
+        <span>Connect Your Wallet</span>
       )}
       {txSig ? (
         <div>
