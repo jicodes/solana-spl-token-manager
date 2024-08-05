@@ -7,6 +7,7 @@ import { CreateMintForm } from "../components/CreateMint";
 import { MintToForm } from "../components/MintToForm";
 import { TransferToForm } from "../components/TransferToForm";
 import { BurnSpl } from "../components/BurnSpl";
+import { DelegateSpl } from "../components/DelegateSpl";
 
 import Head from "next/head";
 
@@ -25,6 +26,7 @@ const Home: NextPage = (props) => {
           <MintToForm />
           <TransferToForm />
           <BurnSpl />
+          <DelegateSpl />
         </div>
       </WalletContextProvider>
     </div>
