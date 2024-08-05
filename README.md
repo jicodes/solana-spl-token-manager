@@ -14,4 +14,6 @@ npm run dev
 yarn dev
 ```
 
-Vist the site: [http://localhost:3000](http://localhost:3000)
+Visit the site: [http://localhost:3000](http://localhost:3000)
+
+![Solana SPL manager](./public/solana-spl-manager.jpeg)
