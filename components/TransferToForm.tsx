@@ -38,8 +38,8 @@ export const TransferToForm: FC = () => {
       let amount = event.target.amount.value;
       amount = BigInt(amount * Math.pow(10, DECIMALS));
 
-      // Get the ATA for the sender
-      const senderAta = await getAssociatedTokenAddress(
+      // Get the ATA for the source account
+      const sourceAtaPubKey = await getAssociatedTokenAddress(
         mintPubKey,
         publicKey,
         false,
@@ -48,19 +48,19 @@ export const TransferToForm: FC = () => {
       );
 
       // Check if the sender's ATA exists
-      const senderAccountInfo = await connection.getAccountInfo(senderAta);
-      if (!senderAccountInfo) {
+      const sourceAtaInfo = await connection.getAccountInfo(sourceAtaPubKey);
+      if (!sourceAtaInfo) {
         throw new Error("Sender's associated token account does not exist.");
       }
 
       // Check the sender's token balance
-      const senderAccount = await getAccount(connection, senderAta);
-      if (senderAccount.amount < amount) {
+      const sourceAta = await getAccount(connection, sourceAtaPubKey);
+      if (sourceAta.amount < amount) {
         throw new Error("Sender does not have enough balance");
       }
 
-      // Get the ATA for the recipient
-      const recipientAta = await getAssociatedTokenAddress(
+      // Get the ATA pubKey for the recipient
+      const recipientAtaPubKey = await getAssociatedTokenAddress(
         mintPubKey,
         recipientPubKey,
         false,
@@ -68,14 +68,14 @@ export const TransferToForm: FC = () => {
         ASSOCIATED_TOKEN_PROGRAM_ID,
       );
       // Check if the ATA exists
-      const accountInfo = await connection.getAccountInfo(recipientAta);
+      const recipientAtaInfo = await connection.getAccountInfo(recipientAtaPubKey);
 
-      if (!accountInfo) {
+      if (!recipientAtaInfo) {
         // If the ATA doesn't exist, create it
         transaction.add(
           createAssociatedTokenAccountInstruction(
             publicKey, // payer
-            recipientAta, // associatedToken
+            recipientAtaPubKey, // associated token account address
             recipientPubKey, // owner
             mintPubKey, // mint
             TOKEN_PROGRAM_ID,
@@ -87,8 +87,8 @@ export const TransferToForm: FC = () => {
       // Add transfer token instruction
       transaction.add(
         createTransferInstruction(
-          senderAta,
-          recipientAta,
+          sourceAtaPubKey,
+          recipientAtaPubKey,
           publicKey,
           amount as bigint,
         ),
@@ -105,11 +105,11 @@ export const TransferToForm: FC = () => {
       );
 
       setTxSig(signature);
-      setTokenAccount(recipientAta.toString());
+      setTokenAccount(recipientAtaPubKey.toString());
 
       // Fetch the updated balance of recipient
-      const account = await getAccount(connection, recipientAta);
-      const balanceInTokens = Number(account.amount) / Math.pow(10, DECIMALS);
+      const recipientAta = await getAccount(connection, recipientAtaPubKey);
+      const balanceInTokens = Number(recipientAta.amount) / Math.pow(10, DECIMALS);
       setBalance(balanceInTokens.toString());
     } catch (error) {
       console.error("Error transfering tokens:", error);
@@ -148,9 +148,7 @@ export const TransferToForm: FC = () => {
             Transfer
           </button>
         </form>
-      ) : (
-        <span>Connect Your Wallet</span>
-      )}
+      ) : null}
       {txSig ? (
         <div>
           <p>Recipient ATA Address: {tokenAccount} </p>
